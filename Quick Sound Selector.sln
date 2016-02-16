@@ -1,0 +1,30 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Quick Sound Selector", "Quick Sound Selector\Quick Sound Selector.vcxproj", "{E8256141-84D2-43BD-97AA-59D4A82B0488}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
+		Dynamic Release|Win32 = Dynamic Release|Win32
+		Dynamic Release|x64 = Dynamic Release|x64
+		Static Release|Win32 = Static Release|Win32
+		Static Release|x64 = Static Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E8256141-84D2-43BD-97AA-59D4A82B0488}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E8256141-84D2-43BD-97AA-59D4A82B0488}.Debug|Win32.Build.0 = Debug|Win32
+		{E8256141-84D2-43BD-97AA-59D4A82B0488}.Debug|Win32.Deploy.0 = Debug|Win32
+		{E8256141-84D2-43BD-97AA-59D4A82B0488}.Debug|x64.ActiveCfg = Debug|Win32
+		{E8256141-84D2-43BD-97AA-59D4A82B0488}.Dynamic Release|Win32.ActiveCfg = Dynamic Release|Win32
+		{E8256141-84D2-43BD-97AA-59D4A82B0488}.Dynamic Release|Win32.Build.0 = Dynamic Release|Win32
+		{E8256141-84D2-43BD-97AA-59D4A82B0488}.Dynamic Release|x64.ActiveCfg = Dynamic Release|Win32
+		{E8256141-84D2-43BD-97AA-59D4A82B0488}.Static Release|Win32.ActiveCfg = Static Release|Win32
+		{E8256141-84D2-43BD-97AA-59D4A82B0488}.Static Release|Win32.Build.0 = Static Release|Win32
+		{E8256141-84D2-43BD-97AA-59D4A82B0488}.Static Release|x64.ActiveCfg = Static Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
