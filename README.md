@@ -1,1 +1,1 @@
-Quickly switch sound enpoint in Windows using hotkeys or a menu.
+Quickly switch the sound endpoint in Windows using hotkeys or a menu.
