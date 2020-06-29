@@ -21,15 +21,15 @@ class CMMNotificationClient :
 	LONG _cRef;
 	IMMDeviceEnumerator *_pEnumerator;
 	HWND mhWnd;
-//	CSoundSourcePrefs * mpPrefs;
+//	CQSESPrefs * mpPrefs;
 
 
 	// Private function to print device-friendly name
-	HRESULT _PrintDeviceName(LPCWSTR  pwstrId);
+	//HRESULT _PrintDeviceName(LPCWSTR  pwstrId);
 
 public:
 
-	CMMNotificationClient(HWND hWnd) :
+	explicit CMMNotificationClient(HWND hWnd) :
 		mhWnd(hWnd),
 		_cRef(1),
 		_pEnumerator(NULL)
@@ -120,10 +120,10 @@ public:
 		case DEVICE_STATE_UNPLUGGED:
 		case DEVICE_STATEMASK_ALL:
 			SendMessage(mhWnd, WM_USER_NOTIFICATION_CHANGED, 0, 0);
-	        return S_OK;
 			break;
         }
-    }
+		return S_OK;
+	}
 
     HRESULT STDMETHODCALLTYPE OnPropertyValueChanged(
                                 LPCWSTR pwstrDeviceId,

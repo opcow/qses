@@ -2,34 +2,17 @@
 
 #include <string>
 #include "windows.h"
-#include <time.h>
+#include <map>
 
-#include <boost/archive/tmpdir.hpp>
-#include <boost/archive/text_woarchive.hpp>
-#include <boost/archive/text_wiarchive.hpp>
-#include <boost/serialization/list.hpp>
-#include <boost/serialization/string.hpp>
-#include <boost/serialization/version.hpp>
-#include <boost/serialization/split_member.hpp>
-
+enum prefs_sections {
+	globals,
+	device,
+	none
+};
 using namespace std;
-namespace bs = boost::serialization;
 
 struct DevicePrefs
 {
-	template<class Archive>
-	void serialize(Archive & ar, const unsigned int version)
-    {
-		ar & Name;
-		ar & DeviceID;
-		ar & HasHotkey;
-		ar & HotkeyString;
-		ar & KeyCode;
-		ar & KeyMods;
-		ar & IsExcludedFromCycle;
-		ar & IsHidden;
-		ar & TimeStamp;
-	}
 	UINT KeyMods;
 	UINT KeyCode;
 	wstring Name;
@@ -39,13 +22,10 @@ struct DevicePrefs
 	bool IsExcludedFromCycle;
 	bool IsHidden;
 	bool IsPresent;
-	time_t TimeStamp;
 };
 
-class CSoundSourcePrefs
+class CQSESPrefs
 {
-
-	friend class boost::serialization::access;
 
 public:
 
@@ -97,26 +77,21 @@ public:
 	bool Load();
 	bool Save();
 
-	CSoundSourcePrefs( const CSoundSourcePrefs& other );
-	CSoundSourcePrefs() : mDevices(0), mNext(0), mMax(10), /*mDefault(0),*/ mKeyCode(0),
+	CQSESPrefs( const CQSESPrefs& other );
+	CQSESPrefs() : mDevices(0), mNext(0), mMax(10), /*mDefault(0),*/ mKeyCode(0),
 							mKeyMods(0), mCycleKeyString(L""), mIsCycleKeyEnabled(false),
 							mDevicesHaveChanged(false) { }
-	~CSoundSourcePrefs() { }
-	CSoundSourcePrefs& operator=(const CSoundSourcePrefs& source);
+	~CQSESPrefs() { }
+	CQSESPrefs& operator=(const CQSESPrefs& source);
 
 private:
 
 	void Erase(int index);
-	bool Insert(int index, DevicePrefs * sdi);
+	//bool Insert(int index, DevicePrefs * sdi);
 	void Remove(int index);
 	void RemoveDupes();
-
 	int FindByName(wstring & name);
-
-	template<class Archive>
-	void load(Archive & ar, const unsigned int version);
-	template<class Archive>
-	void save(Archive & ar, const unsigned int version) const;
+	bool ReadConfig(const wstring &fileName, map <wstring, map <wstring, wstring> > & sections);
 
 	DevicePrefs * mDevices;
 	int mMax;
@@ -129,8 +104,4 @@ private:
 	bool mDevicesHaveChanged; // not used
 	static const int mLimit = 16;
 
-	BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
-
-BOOST_CLASS_VERSION(CSoundSourcePrefs, 1)
-BOOST_CLASS_TRACKING( CSoundSourcePrefs, boost::serialization::track_never )

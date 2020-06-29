@@ -14,7 +14,7 @@ extern void EnableAutoStart();
 extern void DisableAutoStart(void);
 extern UINT CheckAutoStart(void);
 
-static CSoundSourcePrefs * pTempPrefs;
+static CQSESPrefs * pTempPrefs;
 
 WNDPROC OldKeyEditProc, OldCycleEditProc;
 LRESULT CALLBACK NewKeyEditProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -22,8 +22,10 @@ LRESULT CALLBACK NewCycleEditProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
 
 void SubClassControl(HWND hWnd, CONTROLPROC NewProc)
 {
-	OldKeyEditProc = (WNDPROC)GetWindowLong(hWnd, GWL_WNDPROC);
-	SetWindowLong(hWnd, GWL_WNDPROC, (LONG_PTR)NewProc);
+	//OldKeyEditProc = (WNDPROC)GetWindowLong(hWnd, GWL_WNDPROC);
+	//SetWindowLong(hWnd, GWL_WNDPROC, (LONG_PTR)NewProc);
+    OldKeyEditProc = (WNDPROC)GetWindowLongPtr(hWnd, GWLP_WNDPROC);
+    SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG_PTR)NewProc);
 }
 
 LRESULT CALLBACK NewKeyEditProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -80,7 +82,7 @@ void InitComboBox(HWND hDlg)
 	{
 		if (pTempPrefs->GetIsPresent(i) == false)
 			break;
-		ComboBox_AddString(hCombo, pTempPrefs->GetName(i, deviceName).data());
+		ComboBox_AddString(hCombo, pTempPrefs->GetName(i, deviceName).c_str());
 	}
 	ComboBox_SetCurSel(hCombo, 0);
 }
@@ -122,9 +124,6 @@ void SetDialogItems(HWND hDlg)
 	if (device < 0)
 		return;
 
-	HWND hEditKey1 = GetDlgItem(hDlg, IDC_EDIT_KEY);
-	HWND hEditKey2 = GetDlgItem(hDlg, IDC_EDIT_KEY2);
-
 	wstring wstrS;
 	UINT key, mods, check;
 
@@ -152,7 +151,7 @@ void SetDialogItems(HWND hDlg)
 	
 
 	if (key != 0)
-			SetDlgItemText(hDlg, IDC_EDIT_KEY, wstrS.data());
+			SetDlgItemText(hDlg, IDC_EDIT_KEY, wstrS.c_str());
 	else
 			SetDlgItemText(hDlg, IDC_EDIT_KEY, _T(""));
 
@@ -174,7 +173,7 @@ void SetDialogItems(HWND hDlg)
 	if (key != 0)
 	{
 		pTempPrefs->GetCycleKeyString(wstrS);
-		SetDlgItemText(hDlg, IDC_EDIT_KEY2, wstrS.data());
+		SetDlgItemText(hDlg, IDC_EDIT_KEY2, wstrS.c_str());
 	}
 	else
 		SetDlgItemText(hDlg, IDC_EDIT_KEY2, _T(""));
@@ -280,7 +279,7 @@ INT_PTR CALLBACK SettingsDialogProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM 
 	case WM_INITDIALOG:
 		bBusy = true;
 		gOpenWindow = hDlg;
-		pTempPrefs = (CSoundSourcePrefs *) lParam;
+		pTempPrefs = reinterpret_cast<CQSESPrefs *> (lParam);
 		SubClassControl(GetDlgItem(hDlg, IDC_EDIT_KEY), NewKeyEditProc);
 		SubClassControl(GetDlgItem(hDlg, IDC_EDIT_KEY2), NewKeyEditProc);
 		InitComboBox(hDlg);

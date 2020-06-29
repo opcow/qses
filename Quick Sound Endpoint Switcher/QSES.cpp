@@ -1,6 +1,6 @@
 #include <wchar.h>
 #include "windows.h"
-#include <shellapi.h>
+//#include <shellapi.h>
 #include <string>
 #include <sstream>
 #include <tchar.h>
@@ -11,7 +11,7 @@
 #include "PolicyConfig.h"
 #include "Propidl.h"
 #include "Functiondiscoverykeys_devpkey.h"
-#include "QSSIMMNotificationClient.h"
+#include "QSESIMMNotificationClient.h"
 
 #include "Prefs.h"
 #include "Settings.h"
@@ -22,12 +22,12 @@ using namespace std;
 #define MAX_LOADSTRING 100
 #define	WM_USER_SHELLICON WM_USER + 1
 
-#define ID_MENU_ABOUT 100
-#define ID_MENU_DONATE 101
-#define ID_MENU_DEVICES 120
-#define ID_MENU_EXIT 140
-#define ID_MENU_SETTINGS 150
-#define CYCLE_HOTKEY 200
+#define ID_MENU_ABOUT (UINT)100
+#define ID_MENU_DONATE (UINT)101
+#define ID_MENU_DEVICES (UINT)120
+#define ID_MENU_EXIT (UINT)140
+#define ID_MENU_SETTINGS (UINT)150
+#define CYCLE_HOTKEY (UINT)200
 
 // Global Variables:
 HINSTANCE hInst;
@@ -44,7 +44,7 @@ const int cMaxDevices = 10;
 UINT gHotkeyFlags = 0;
 wstringstream gVersionString;
 
-CSoundSourcePrefs gPrefs;
+CQSESPrefs gPrefs;
 CMMNotificationClient * pClient = 0;
 
 
@@ -63,10 +63,10 @@ bool GetDeviceIcon(HICON * hIcon);
 bool IsDefaultAudioPlaybackDevice(const wstring& s);
 wstring& GetDefaultAudioPlaybackDevice(wstring& s);
 
-void OpenWebsite (WCHAR * cpURL)
-{
-      ShellExecute (NULL, L"open", cpURL, NULL, NULL, SW_SHOWNORMAL);
-}
+//void OpenWebsite (WCHAR * cpURL)
+//{
+//      ShellExecute (NULL, L"open", cpURL, NULL, NULL, SW_SHOWNORMAL);
+//}
 
 void MakeStartupLinkPath(TCHAR * name, TCHAR * path)
 {
@@ -86,8 +86,6 @@ void EnableAutoStart()
 {
 	IShellLink* pShellLink = NULL;
 	IPersistFile* pPersistFile;
-	WIN32_FIND_DATA fd;
-    TCHAR szStartupLinkName[MAX_PATH];
 	HRESULT hres;
 
 	hres = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_ALL, IID_IShellLink, (void**)&pShellLink);
@@ -105,6 +103,7 @@ void EnableAutoStart()
 			hres = pShellLink->QueryInterface(IID_IPersistFile, (void**)&pPersistFile);
 			if (SUCCEEDED(hres))
 			{
+				TCHAR szStartupLinkName[MAX_PATH];
 				MakeStartupLinkPath(gszApplicationToolTip, szStartupLinkName);
 				pPersistFile->Save(szStartupLinkName, TRUE);
 				pPersistFile->Release();
@@ -117,7 +116,6 @@ void EnableAutoStart()
 void DisableAutoStart(void)
 {
     TCHAR szStartupLinkName[MAX_PATH];
-	HRESULT hres;
 
 	MakeStartupLinkPath(gszApplicationToolTip, szStartupLinkName);
 	if (*szStartupLinkName != TEXT('\0'))
@@ -127,7 +125,6 @@ void DisableAutoStart(void)
 UINT CheckAutoStart(void)
 {
     TCHAR szStartupLinkName[MAX_PATH];
-	HRESULT hres;
 
 	MakeStartupLinkPath(gszApplicationToolTip, szStartupLinkName);
 	HANDLE hFile = CreateFile(szStartupLinkName, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -144,7 +141,6 @@ wstring& MakeHotkeyString(UINT code, UINT mods, wstring & str)
 	WCHAR keyname[256];
 	UINT scanCode;
 	int length = 0;
-
 
 	if (mods & MOD_SHIFT)
 	{
@@ -202,7 +198,7 @@ void HandleHotkeyError(wstring& s)
 	DWORD err = GetLastError();
 	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, 0, err, MAKELANGID(LANG_NEUTRAL,SUBLANG_DEFAULT), ErrorStr, 511, 0);
 	s += ErrorStr;
-	MessageBox(NULL, s.data(), L"Hotkey Error", MB_OK);
+	MessageBox(NULL, s.c_str(), L"Hotkey Error", MB_OK);
 
 }
 
@@ -226,7 +222,8 @@ void InstallHotkeys(HWND hWnd)
 	if (gPrefs.GetCycleKeyEnabled())
 	{
 		UnregisterHotKey(hWnd, CYCLE_HOTKEY);
-		if(0 == RegisterHotKey(hWnd, CYCLE_HOTKEY, gPrefs.GetCycleKeyMods() | gHotkeyFlags, gPrefs.GetCycleKeyCode()))
+		if (0 == RegisterHotKey(hWnd, CYCLE_HOTKEY, gPrefs.GetCycleKeyMods() | gHotkeyFlags, gPrefs.GetCycleKeyCode()))
+		//if (0 == RegisterHotKey(hWnd, CYCLE_HOTKEY, MOD_ALT | MOD_NOREPEAT, 0x42))
 		{
 			s = L"Cycle Hotkey";
 			HandleHotkeyError(s);
@@ -241,15 +238,14 @@ void CycleDevices()
 	UINT count = gPrefs.GetCount();
 //	UINT start = (gPrefs.GetDefault() + 1);
 	UINT start = gPrefs.FindByID(GetDefaultAudioPlaybackDevice(IdString)) + 1;
-	UINT j;
 
-	for (UINT i = 0; i < count; i++)
+	for (UINT i = 0, j; i < count; i++)
 	{
 		j = start++ % count;
 		gPrefs.GetName(j, IdString);
 		if(!gPrefs.GetExcludeFromCycle(j) && !gPrefs.GetIsHidden(j) && gPrefs.GetIsPresent(j))
 		{
-			SetDefaultAudioPlaybackDevice((gPrefs.GetID(j, IdString)).data());
+			SetDefaultAudioPlaybackDevice((gPrefs.GetID(j, IdString)).c_str());
 //			gPrefs.SetDefault(j);
 			break;
 		}
@@ -436,7 +432,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	int wmId, wmEvent;
 	POINT lpClickPoint;
 	UINT count;
-	UINT devID;
 	HMENU hPopMenu;
 	wstring MenuString, TempString;
 
@@ -448,7 +443,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (wParam == CYCLE_HOTKEY)
 			CycleDevices();
 		else
-			SetDefaultAudioPlaybackDevice((gPrefs.GetID(wParam, TempString)).data());
+			SetDefaultAudioPlaybackDevice((gPrefs.GetID(wParam, TempString)).c_str());
 		return TRUE;
 	case WM_CREATE:
 		pClient = new CMMNotificationClient(hWnd);
@@ -487,7 +482,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			GetCursorPos(&lpClickPoint);
 			hPopMenu = CreatePopupMenu();
 			InsertMenu(hPopMenu,0xFFFFFFFF, MF_BYPOSITION|MF_STRING, ID_MENU_ABOUT, _T("About..."));
-			InsertMenu(hPopMenu,0xFFFFFFFF, MF_BYPOSITION|MF_STRING, ID_MENU_DONATE, _T("Donate (Opens Web Browser)"));
 			InsertMenu(hPopMenu, 0xFFFFFFFF, MF_SEPARATOR|MF_BYPOSITION, 0, NULL);
 
 			count = gPrefs.GetCount();
@@ -499,9 +493,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				if (gPrefs.GetHotkeyEnabled(i))
 					MenuString = MakeHotkeyString(gPrefs.GetHotkeyCode(i), gPrefs.GetHotkeyMods(i), MenuString);
 				if (IsDefaultAudioPlaybackDevice(gPrefs.GetID(i, TempString)))
-					InsertMenu(hPopMenu,0xFFFFFFFF, MF_BYPOSITION|MF_STRING|MF_CHECKED, ID_MENU_DEVICES + i, MenuString.data());
+					InsertMenu(hPopMenu,0xFFFFFFFF, MF_BYPOSITION|MF_STRING|MF_CHECKED, ID_MENU_DEVICES + i, MenuString.c_str());
 				else
-					InsertMenu(hPopMenu,0xFFFFFFFF, MF_BYPOSITION|MF_STRING, ID_MENU_DEVICES + i, MenuString.data());
+					InsertMenu(hPopMenu,0xFFFFFFFF, MF_BYPOSITION|MF_STRING, ID_MENU_DEVICES + i, MenuString.c_str());
 			}
 
 			gPrefs.GetCycleKeyString(TempString);
@@ -525,9 +519,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case ID_MENU_ABOUT:
 			DialogBox(hInst, MAKEINTRESOURCE(IDD_DIALOG_ABOUT), hWnd, About);
 			return TRUE;
-		case ID_MENU_DONATE:
-			OpenWebsite(L"https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=PSBXPNT3ZDG2Q");
-			return TRUE;
+		//case ID_MENU_DONATE:
+		//	OpenWebsite(L"https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=PSBXPNT3ZDG2Q");
+		//	return TRUE;
 		case ID_MENU_EXIT:
 			Shell_NotifyIcon(NIM_DELETE,&nidApp);
 			SendMessage(hWnd, WM_CLOSE, 0, 0);
@@ -542,8 +536,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		default:
 			if (wmId >= (ID_MENU_DEVICES) && wmId < (ID_MENU_DEVICES + cMaxDevices))
 			{
-				devID = wmId - ID_MENU_DEVICES;
-				SetDefaultAudioPlaybackDevice((gPrefs.GetID(devID, TempString)).data());
+				UINT devID = wmId - ID_MENU_DEVICES;
+				SetDefaultAudioPlaybackDevice((gPrefs.GetID(devID, TempString)).c_str());
 				return TRUE;
 			}
 			else
@@ -563,7 +557,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 void DoSettingsDialog(HINSTANCE hInst, HWND hWnd)
 {
-	CSoundSourcePrefs TempPrefs;
+	CQSESPrefs TempPrefs;
 	INT_PTR rc;
 
 	TempPrefs = gPrefs;
@@ -584,7 +578,7 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_INITDIALOG:
 		gOpenWindow = hDlg;
 		MakegVersionString(ghInstance);
-		SetWindowText(GetDlgItem(hDlg, IDC_STATIC_APP), gVersionString.str().data());
+		SetWindowText(GetDlgItem(hDlg, IDC_STATIC_APP), gVersionString.str().c_str());
 		return (INT_PTR)TRUE;
 	case WM_COMMAND:
 		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
@@ -624,7 +618,6 @@ bool GetDeviceIcon(HICON * hIcon)
 	PropVariantClear(&propVariant);
 
 	{
-		UINT nIconID;
 		wstring wsIconPath;
 		wstring wsIconId;
 
@@ -634,8 +627,8 @@ bool GetDeviceIcon(HICON * hIcon)
 		{
 			wsIconId = wsIconPath.substr(pos+1, string::npos);
 			wsIconPath.erase(pos, string::npos);
-			nIconID = (UINT) _wtoi(wsIconId.data());
-			*hIcon = ExtractIcon(ghInstance, wsIconPath.data(), nIconID);
+			UINT nIconID = static_cast<UINT>(_wtoi(wsIconId.c_str()));
+			*hIcon = ExtractIcon(ghInstance, wsIconPath.c_str(), nIconID);
 		}
 	}
 Exit:
