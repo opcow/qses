@@ -10,3 +10,10 @@
 /Release
 /Quick Sound Endpoint Switcher/Prefs2.7z
 /Quick Sound Endpoint Switcher/Prefs.7z
+*.tlog
+*.obj
+/Quick Sound Endpoint Switcher/x64/Release/Quick Sound Endpoint Switcher.exe.recipe
+*.cod
+*.ipdb
+*.iobj
+*.pdb
