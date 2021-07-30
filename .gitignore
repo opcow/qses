@@ -18,3 +18,4 @@
 *.iobj
 *.pdb
 *.log
+/Quick Sound Endpoint Switcher/x64/Release/QSES.res
