@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <Mmdeviceapi.h>
 #include <Shlobj.h>
+#include <atlbase.h>
+#include <atlcomcli.h>   // defines CComPtr
 
 #include "PolicyConfig.h"
 #include "Propidl.h"
@@ -597,48 +599,52 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 #define EXIT_ON_ERROR(hres)  \
               if (FAILED(hres)) { goto Exit; }
 
-bool GetDeviceIcon(HICON * hIcon)
+bool GetDeviceIcon(HICON* hIcon)
 {
+	if (!hIcon)
+		return false;
+
+	*hIcon = NULL;
+
 	wstring path;
-	IMMDeviceEnumerator *pEnum = NULL;
-	IPropertyStore *pStore;
+	CComPtr<IMMDeviceEnumerator> pEnum;
+	CComPtr<IPropertyStore> pStore;
+	CComPtr<IMMDevice> pDevice;
 	PROPVARIANT propVariant;
-	IMMDevice *pDevice;
+	PropVariantInit(&propVariant);
 	HRESULT hr;
 
 	hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL,
 		CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&pEnum);
-	EXIT_ON_ERROR(hr)
+	if (FAILED(hr))
+		return false;
+
 	hr = pEnum->GetDefaultAudioEndpoint(eRender, eConsole, &pDevice);
-	EXIT_ON_ERROR(hr)
+	if (FAILED(hr))
+		return false;
+
 	hr = pDevice->OpenPropertyStore(STGM_READ, &pStore);
-	EXIT_ON_ERROR(hr)
-	hr = pStore->GetValue(PKEY_DeviceClass_IconPath,  &propVariant);
+	if (FAILED(hr))
+		return false;
+
+	hr = pStore->GetValue(PKEY_DeviceClass_IconPath, &propVariant);
+	if (FAILED(hr))
+		return false;
+
 	path = propVariant.pwszVal;
 	PropVariantClear(&propVariant);
 
+	wstring wsIconPath = path;
+	size_t pos = wsIconPath.find(L',');
+	if (pos != std::string::npos)
 	{
-		wstring wsIconPath;
-		wstring wsIconId;
-
-		wsIconPath = path;
-		UINT pos = wsIconPath.find(L',');
-		if (pos != std::string::npos)
-		{
-			wsIconId = wsIconPath.substr(pos+1, string::npos);
-			wsIconPath.erase(pos, string::npos);
-			UINT nIconID = static_cast<UINT>(_wtoi(wsIconId.c_str()));
-			*hIcon = ExtractIcon(ghInstance, wsIconPath.c_str(), nIconID);
-		}
+		wstring wsIconId = wsIconPath.substr(pos + 1, string::npos);
+		wsIconPath.erase(pos, string::npos);
+		UINT nIconID = static_cast<UINT>(_wtoi(wsIconId.c_str()));
+		*hIcon = ExtractIcon(ghInstance, wsIconPath.c_str(), nIconID);
 	}
-Exit:
-	SAFE_RELEASE(pStore);
-	SAFE_RELEASE(pDevice);
-	SAFE_RELEASE(pEnum);
 
-	if (hIcon != 0 && hIcon != (HICON *) 1)
-		return true;
-	return false;
+	return (*hIcon != NULL && *hIcon != (HICON)1);
 }
 
 bool SetDefaultAudioPlaybackDevice(LPCWSTR devID)
@@ -678,49 +684,51 @@ void InstallNotificationCallBack()
 wstring& GetDefaultAudioPlaybackDevice(wstring& s)
 {
 	HRESULT hr;
-	IMMDeviceEnumerator *pEnum = NULL;
-	IMMDevice *pDefDevice;
+	CComPtr<IMMDeviceEnumerator> pEnum;
+	CComPtr<IMMDevice> pDefDevice;
 	LPWSTR pwszDefID = NULL;
 
 	s.clear();
 	hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL,
 		CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&pEnum);
-	EXIT_ON_ERROR(hr);
-	hr = pEnum->GetDefaultAudioEndpoint(eRender, eConsole, &pDefDevice);
-	EXIT_ON_ERROR(hr);
-	hr = pDefDevice->GetId(&pwszDefID);
-	EXIT_ON_ERROR(hr);
-	s = pwszDefID;
+	if (FAILED(hr))
+		return s;
 
-Exit:
+	hr = pEnum->GetDefaultAudioEndpoint(eRender, eConsole, &pDefDevice);
+	if (FAILED(hr))
+		return s;
+
+	hr = pDefDevice->GetId(&pwszDefID);
+	if (FAILED(hr))
+		return s;
+
+	s = pwszDefID;
 	CoTaskMemFree(pwszDefID);
-	SAFE_RELEASE(pEnum);
-	SAFE_RELEASE(pDefDevice);
 	return s;
 }
 
 bool IsDefaultAudioPlaybackDevice(const wstring& s)
 {
 	HRESULT hr;
-	IMMDeviceEnumerator *pEnum = NULL;
-	IMMDevice *pDefDevice;
+	CComPtr<IMMDeviceEnumerator> pEnum;
+	CComPtr<IMMDevice> pDefDevice;
 	LPWSTR pwszDefID = NULL;
-	bool bMatch = false;
 
 	hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL,
 		CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&pEnum);
-	EXIT_ON_ERROR(hr);
-	hr = pEnum->GetDefaultAudioEndpoint(eRender, eConsole, &pDefDevice);
-	EXIT_ON_ERROR(hr);
-	hr = pDefDevice->GetId(&pwszDefID);
-	EXIT_ON_ERROR(hr);
+	if (FAILED(hr))
+		return false;
 
-	if (s == pwszDefID)
-		bMatch = true;
-Exit:
+	hr = pEnum->GetDefaultAudioEndpoint(eRender, eConsole, &pDefDevice);
+	if (FAILED(hr))
+		return false;
+
+	hr = pDefDevice->GetId(&pwszDefID);
+	if (FAILED(hr))
+		return false;
+
+	bool bMatch = (s == pwszDefID);
 	CoTaskMemFree(pwszDefID);
-	SAFE_RELEASE(pEnum);
-	SAFE_RELEASE(pDefDevice);
 	return bMatch;
 }
 
@@ -743,49 +751,73 @@ int EnumerateDevices()
 
 	HRESULT hr;
 
-	IMMDeviceEnumerator *pEnum = NULL;
+	// Use smart COM pointers for RAII and safer Release semantics.
+	CComPtr<IMMDeviceEnumerator> pEnum;
+	CComPtr<IMMDeviceCollection> pDevices;
+	CComPtr<IMMDevice> pDevice;
+	CComPtr<IPropertyStore> pStore;
+	PROPVARIANT propVariant;
+
 	// Create a multimedia device enumerator.
 	hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL,
 		CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&pEnum);
-
 	EXIT_ON_ERROR(hr);
-	IMMDeviceCollection *pDevices;
+
 	// Enumerate the output devices.
 	hr = pEnum->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, &pDevices);
 	EXIT_ON_ERROR(hr);
-	pDevices->GetCount(&count);
+
+	hr = pDevices->GetCount(&count);
+	EXIT_ON_ERROR(hr);
+
 	if (count > cMaxDevices)
 		count = cMaxDevices;
 
-	EXIT_ON_ERROR(hr);
 	gPrefs.ResetPresent(); // mark all devices not present
-
-	IMMDevice *pDevice;
-	IPropertyStore *pStore;
-	PROPVARIANT propVariant;
 
 	for (UINT i = 0; i < count; i++)
 	{
+		// Ensure local variables are clean for each iteration.
+		wstrID = NULL;
+		PropVariantInit(&propVariant);
+		pStore.Release();
+		pDevice.Release();
+
 		hr = pDevices->Item(i, &pDevice);
 		EXIT_ON_ERROR(hr);
+
 		hr = pDevice->GetId(&wstrID);
+		EXIT_ON_ERROR(hr);
 		SoundDeviceInfo.DeviceID = wstrID;
 		CoTaskMemFree(wstrID);
-		EXIT_ON_ERROR(hr);
+		wstrID = NULL;
+
 		hr = pDevice->OpenPropertyStore(STGM_READ, &pStore);
 		EXIT_ON_ERROR(hr);
-		PropVariantInit(&propVariant);
+
 		hr = pStore->GetValue(PKEY_Device_FriendlyName, &propVariant);
 		EXIT_ON_ERROR(hr);
+
 		SoundDeviceInfo.Name = propVariant.pwszVal;
 		gPrefs.Update(&SoundDeviceInfo);
+
 		PropVariantClear(&propVariant);
+
+		// release per-iteration references so Exit cleanup only deals with remaining objects
+		pStore.Release();
+		pDevice.Release();
 	}
 Exit:
-	SAFE_RELEASE(pStore);
-	SAFE_RELEASE(pDevice);
-	SAFE_RELEASE(pDevices);
-	SAFE_RELEASE(pEnum);
+	// make sure any leftover allocations are freed
+	PropVariantClear(&propVariant);
+	CoTaskMemFree(wstrID);
+
+	// smart pointers auto-release on scope exit; explicit release here for clarity
+	pStore.Release();
+	pDevice.Release();
+	pDevices.Release();
+	pEnum.Release();
+
 	gPrefs.Sort();
 	return 0;
 }

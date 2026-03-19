@@ -244,8 +244,8 @@ bool CQSESPrefs::Init(int max)
 	if (max < 1 || max > mLimit)
 		return false;
 
-	if (mDevices == 0)
-		delete mDevices;
+	if (mDevices != 0)
+		delete[] mDevices;
 
 	mDevices = new DevicePrefs[max];
 
@@ -268,9 +268,10 @@ void CQSESPrefs::Remove(int index)
 	if (index < (mNext - 1))
 	{
 		for (int i = index; i < (mNext - 1); i++)
-			mDevices[i] = mDevices[i+1];
+			mDevices[i] = mDevices[i + 1];
 	}
-	Erase(mNext--);
+	--mNext;
+	Erase(mNext);
 }
 
 void CQSESPrefs::RemoveDupes()
