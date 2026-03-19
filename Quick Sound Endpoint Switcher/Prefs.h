@@ -15,13 +15,25 @@ struct DevicePrefs
 {
 	UINT KeyMods;
 	UINT KeyCode;
-	wstring Name;
-	wstring DeviceID;
-	wstring HotkeyString;
+	std::wstring Name;
+	std::wstring DeviceID;
+	std::wstring HotkeyString;
 	bool HasHotkey;
 	bool IsExcludedFromCycle;
 	bool IsHidden;
 	bool IsPresent;
+
+	DevicePrefs() :
+		KeyMods(0),
+		KeyCode(0),
+		Name(),
+		DeviceID(),
+		HotkeyString(),
+		HasHotkey(false),
+		IsExcludedFromCycle(false),
+		IsHidden(false),
+		IsPresent(false)
+	{}
 };
 
 class CQSESPrefs
