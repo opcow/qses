@@ -757,6 +757,7 @@ int EnumerateDevices()
 	CComPtr<IMMDevice> pDevice;
 	CComPtr<IPropertyStore> pStore;
 	PROPVARIANT propVariant;
+	PropVariantInit(&propVariant);
 
 	// Create a multimedia device enumerator.
 	hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL,
@@ -779,7 +780,6 @@ int EnumerateDevices()
 	{
 		// Ensure local variables are clean for each iteration.
 		wstrID = NULL;
-		PropVariantInit(&propVariant);
 		pStore.Release();
 		pDevice.Release();
 
@@ -795,21 +795,23 @@ int EnumerateDevices()
 		hr = pDevice->OpenPropertyStore(STGM_READ, &pStore);
 		EXIT_ON_ERROR(hr);
 
+		PropVariantInit(&propVariant);
 		hr = pStore->GetValue(PKEY_Device_FriendlyName, &propVariant);
-		EXIT_ON_ERROR(hr);
+		if ((((HRESULT)(hr)) < 0)) {
+			PropVariantClear(&propVariant);
+			goto Exit;
+		};
 
 		SoundDeviceInfo.Name = propVariant.pwszVal;
 		gPrefs.Update(&SoundDeviceInfo);
 
-		PropVariantClear(&propVariant);
-
 		// release per-iteration references so Exit cleanup only deals with remaining objects
+		PropVariantClear(&propVariant);
 		pStore.Release();
 		pDevice.Release();
 	}
 Exit:
 	// make sure any leftover allocations are freed
-	PropVariantClear(&propVariant);
 	CoTaskMemFree(wstrID);
 
 	// smart pointers auto-release on scope exit; explicit release here for clarity
