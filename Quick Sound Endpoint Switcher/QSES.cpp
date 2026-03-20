@@ -648,22 +648,16 @@ bool GetDeviceIcon(HICON* hIcon)
 
 bool SetDefaultAudioPlaybackDevice(LPCWSTR devID)
 {	
-	IPolicyConfigVista *pPolicyConfig;
+	CComPtr<IPolicyConfigVista> pPolicyConfig;
 	ERole reserved = eConsole;
-	HRESULT hr;// = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+	HRESULT hr;
 
-	//if (SUCCEEDED(hr))
+	hr = pPolicyConfig.CoCreateInstance(__uuidof(CPolicyConfigVistaClient));
+	if (SUCCEEDED(hr))
 	{
-		hr = CoCreateInstance(__uuidof(CPolicyConfigVistaClient), 
-			NULL, CLSCTX_ALL, __uuidof(IPolicyConfigVista), (LPVOID *)&pPolicyConfig);
-		if (SUCCEEDED(hr))
-		{
-			hr = pPolicyConfig->SetDefaultEndpoint(devID, reserved);
-			pPolicyConfig->Release();
-		}
+		hr = pPolicyConfig->SetDefaultEndpoint(devID, reserved);
 	}
-	//CoUninitialize();
-	return SUCCEEDED(hr); // fixme make void?
+	return SUCCEEDED(hr);
 }
 
 void InstallNotificationCallBack()

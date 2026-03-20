@@ -9,8 +9,6 @@
 #pragma once
 
 
-interface DECLSPEC_UUID("f8679f50-850a-41cf-9c72-430f290290c8")
-IPolicyConfig;
 class DECLSPEC_UUID("870af99c-171d-4f9e-af0d-e63df40c2bc9")
 CPolicyConfigClient;
 // ----------------------------------------------------------------------------
@@ -26,7 +24,8 @@ CPolicyConfigClient;
 // 
 // @compatible: Windows 7 and Later
 // ----------------------------------------------------------------------------
-interface IPolicyConfig : public IUnknown
+interface DECLSPEC_UUID("f8679f50-850a-41cf-9c72-430f290290c8")
+IPolicyConfig : public IUnknown
 {
 public:
 
@@ -96,8 +95,6 @@ public:
     );
 };
 
-interface DECLSPEC_UUID("568b9108-44bf-40b4-9006-86afe5b5a620")
-IPolicyConfigVista;
 class DECLSPEC_UUID("294935CE-F637-4E7C-A41B-AB255460B862")
 CPolicyConfigVistaClient;
 // ----------------------------------------------------------------------------
@@ -113,7 +110,8 @@ CPolicyConfigVistaClient;
 // 
 // @compatible: Windows Vista and Later
 // ----------------------------------------------------------------------------
-interface IPolicyConfigVista : public IUnknown
+interface DECLSPEC_UUID("568b9108-44bf-40b4-9006-86afe5b5a620")
+IPolicyConfigVista : public IUnknown
 {
 public:
 

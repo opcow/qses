@@ -263,4 +263,3 @@ UINT CreateHotkeyWindow(HWND hWndParent, HINSTANCE hInstance, UINT * HKMods, UIN
 
 	return CloseKey;
 }
-

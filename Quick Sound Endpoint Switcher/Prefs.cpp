@@ -12,13 +12,13 @@ using namespace std;
 // trim from start (in place)
 static inline void ltrim(std::wstring &s) {
 	s.erase(s.begin(), std::find_if(s.begin(), s.end(),
-		std::not1(std::ptr_fun<int, int>(isspace))));
+		[](int ch) { return !iswspace(ch); }));
 }
 
 // trim from end (in place)
 static inline void rtrim(std::wstring &s) {
 	s.erase(std::find_if(s.rbegin(), s.rend(),
-		std::not1(std::ptr_fun<int, int>(isspace))).base(), s.end());
+		[](int ch) { return !iswspace(ch); }).base(), s.end());
 }
 
 // trim from both ends (in place)
@@ -55,6 +55,8 @@ CQSESPrefs& CQSESPrefs::operator=( const CQSESPrefs& source )
 		mCycleKeyString = source.mCycleKeyString;
 		mIsCycleKeyEnabled = source.mIsCycleKeyEnabled;
 		mDevicesHaveChanged = source.mDevicesHaveChanged;
+
+		delete[] mDevices;
 
 		mDevices = new DevicePrefs[mMax];
 		for (int i = 0; i < mNext; i++)

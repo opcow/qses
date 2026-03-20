@@ -93,7 +93,7 @@ public:
 	CQSESPrefs() : mDevices(0), mNext(0), mMax(10), /*mDefault(0),*/ mKeyCode(0),
 							mKeyMods(0), mCycleKeyString(L""), mIsCycleKeyEnabled(false),
 							mDevicesHaveChanged(false) { }
-	~CQSESPrefs() { }
+	~CQSESPrefs() { delete[] mDevices; }
 	CQSESPrefs& operator=(const CQSESPrefs& source);
 
 private:
