@@ -317,6 +317,8 @@ void MakegVersionString(HINSTANCE hInstance)
 	VerQueryValue(pBuffer,_T("\\"),(void**)&pFixedInfo,(UINT *)&uVersionLen);
 
 	LoadString(hInstance, IDS_APP_TITLE, AppName, MAX_LOADSTRING);
+	gVersionString.str(L"");
+	gVersionString.clear();
 	gVersionString << AppName
 		<< L" " << HIWORD (pFixedInfo->dwProductVersionMS)
 		<< L"." << LOWORD (pFixedInfo->dwProductVersionMS)
@@ -521,9 +523,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case ID_MENU_ABOUT:
 			DialogBox(hInst, MAKEINTRESOURCE(IDD_DIALOG_ABOUT), hWnd, About);
 			return TRUE;
-		//case ID_MENU_DONATE:
-		//	OpenWebsite(L"https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=PSBXPNT3ZDG2Q");
-		//	return TRUE;
 		case ID_MENU_EXIT:
 			Shell_NotifyIcon(NIM_DELETE,&nidApp);
 			SendMessage(hWnd, WM_CLOSE, 0, 0);
