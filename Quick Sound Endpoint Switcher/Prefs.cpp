@@ -334,8 +334,9 @@ bool CQSESPrefs::Save()
 	RemoveDupes();
 
 	SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, 0, &wstrPrefsPath);
-
 	FilePath = wstrPrefsPath;
+	CoTaskMemFree(wstrPrefsPath);
+
 	FilePath += L"\\Quick Sound Endpoint Switcher";
 	CreateDirectoryW(FilePath.c_str(), 0);
 	FilePath += L"\\Preferences.ini";
@@ -419,8 +420,9 @@ bool CQSESPrefs::Load()
 {
 	LPWSTR wstrPrefsPath = 0;
 	SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, 0, &wstrPrefsPath);
-
 	wstring FilePath(wstrPrefsPath);
+	CoTaskMemFree(wstrPrefsPath);
+
 	FilePath += L"\\Quick Sound Endpoint Switcher";
 	CreateDirectoryW(FilePath.c_str(), 0);
 	FilePath += L"\\Preferences.ini";

@@ -1,6 +1,7 @@
 #pragma once
 #include "mmdeviceapi.h"
-#include <wmsdk.h>
+#include <atlbase.h>
+#include <atlcomcli.h>
 #include <string>
 #include "Prefs.h"
 
@@ -9,17 +10,11 @@
 #define WM_USER_NOTIFICATION_REMOVED WM_USER + 4
 #define WM_USER_NOTIFICATION_CHANGED WM_USER + 5
 
-#ifndef SAFE_RELEASE
-#define SAFE_RELEASE(punk)  \
-              if ((punk) != NULL)  \
-                { (punk)->Release(); (punk) = NULL; }
-#endif
-
 class CMMNotificationClient :
 	public IMMNotificationClient 
 {
 	LONG _cRef;
-	IMMDeviceEnumerator *_pEnumerator;
+	CComPtr<IMMDeviceEnumerator> _pEnumerator;
 	HWND mhWnd;
 //	CQSESPrefs * mpPrefs;
 
@@ -38,7 +33,7 @@ public:
 
 	~CMMNotificationClient()
 	{
-		SAFE_RELEASE(_pEnumerator);
+		// _pEnumerator released automatically by CComPtr
 	}
 
 

@@ -58,10 +58,10 @@ LRESULT CALLBACK NewKeyEditProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 			return 0;
 		}
 		if (GetDlgCtrlID(hwnd) == IDC_EDIT_KEY)
-			pTempPrefs->SetHotkeyCode(ComboBox_GetCurSel(GetDlgItem(GetParent(hwnd), IDC_COMBO1)), wParam);
+			pTempPrefs->SetHotkeyCode(ComboBox_GetCurSel(GetDlgItem(GetParent(hwnd), IDC_COMBO1)), (UINT)wParam);
 		else
-			pTempPrefs->SetCycleKeyCode(wParam);
-		GetKeyNameText(lParam, KeyName, 127);
+			pTempPrefs->SetCycleKeyCode((UINT)wParam);
+		GetKeyNameText((LONG)lParam, KeyName, 127);
 		SetWindowText(hwnd, KeyName);
 		SendMessage(hwnd, EM_SETSEL, MAKELONG(0x8000,0x0000), MAKELONG(0xffff,0xffff));
 		return 0;

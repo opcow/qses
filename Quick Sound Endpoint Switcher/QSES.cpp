@@ -4,8 +4,6 @@
 //#include <shellapi.h>
 #include <string>
 #include <sstream>
-#include <tchar.h>
-#include <stdlib.h>
 #include <Mmdeviceapi.h>
 #include <Shlobj.h>
 #include <atlbase.h>
@@ -38,13 +36,13 @@ NOTIFYICONDATA nidApp;
 HICON hMainIcon;
 bool gbDevicesChanged = false;
 
-TCHAR gszTitle[MAX_LOADSTRING];
-TCHAR gszWindowClass[MAX_LOADSTRING];
-TCHAR gszApplicationToolTip[MAX_LOADSTRING];
+WCHAR gszTitle[MAX_LOADSTRING];
+WCHAR gszWindowClass[MAX_LOADSTRING];
+WCHAR gszApplicationToolTip[MAX_LOADSTRING];
 HINSTANCE ghInstance;
 HWND gOpenWindow = 0;
 const int cMaxDevices = 10;
-UINT gHotkeyFlags = 0;
+const UINT gHotkeyFlags = MOD_NOREPEAT;
 wstringstream gVersionString;
 
 CQSESPrefs gPrefs;
@@ -66,18 +64,23 @@ bool GetDeviceIcon(HICON * hIcon);
 bool IsDefaultAudioPlaybackDevice(const wstring& s);
 wstring& GetDefaultAudioPlaybackDevice(wstring& s);
 
-void MakeStartupLinkPath(TCHAR * name, TCHAR * path)
+void MakeStartupLinkPath(WCHAR * name, WCHAR * path)
 {
-	HRESULT hres;
-	hres = SHGetFolderPath(NULL, CSIDL_STARTUP, NULL, SHGFP_TYPE_CURRENT, path);
+	LPWSTR wstrStartupPath = 0;
+	HRESULT hres = SHGetKnownFolderPath(FOLDERID_Startup, 0, 0, &wstrStartupPath);
 	if (SUCCEEDED(hres))
 	{
-		_tcscat_s(path, MAX_PATH, TEXT("\\"));
-		_tcscat_s(path, MAX_PATH, name);
-		_tcscat_s(path, MAX_PATH, TEXT(".lnk"));
+		wcscpy_s(path, MAX_PATH, wstrStartupPath);
+		CoTaskMemFree(wstrStartupPath);
+		wcscat_s(path, MAX_PATH, L"\\");
+		wcscat_s(path, MAX_PATH, name);
+		wcscat_s(path, MAX_PATH, L".lnk");
 	}
 	else
-		*path = TEXT('\0');
+	{
+		CoTaskMemFree(wstrStartupPath);
+		*path = L'\0';
+	}
 }
 
 void EnableAutoStart()
@@ -101,7 +104,7 @@ void EnableAutoStart()
 			hres = pShellLink->QueryInterface(IID_IPersistFile, (void**)&pPersistFile);
 			if (SUCCEEDED(hres))
 			{
-				TCHAR szStartupLinkName[MAX_PATH];
+				WCHAR szStartupLinkName[MAX_PATH];
 				MakeStartupLinkPath(gszApplicationToolTip, szStartupLinkName);
 				pPersistFile->Save(szStartupLinkName, TRUE);
 				pPersistFile->Release();
@@ -113,19 +116,19 @@ void EnableAutoStart()
 
 void DisableAutoStart(void)
 {
-    TCHAR szStartupLinkName[MAX_PATH];
+	WCHAR szStartupLinkName[MAX_PATH];
 
 	MakeStartupLinkPath(gszApplicationToolTip, szStartupLinkName);
-	if (*szStartupLinkName != TEXT('\0'))
-		DeleteFile(szStartupLinkName);
+	if (*szStartupLinkName != L'\0')
+		DeleteFileW(szStartupLinkName);
 }
 
 UINT CheckAutoStart(void)
 {
-    TCHAR szStartupLinkName[MAX_PATH];
+	WCHAR szStartupLinkName[MAX_PATH];
 
 	MakeStartupLinkPath(gszApplicationToolTip, szStartupLinkName);
-	HANDLE hFile = CreateFile(szStartupLinkName, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	HANDLE hFile = CreateFileW(szStartupLinkName, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (INVALID_HANDLE_VALUE != hFile)
 	{
 		CloseHandle(hFile);
@@ -136,38 +139,38 @@ UINT CheckAutoStart(void)
 
 wstring& MakeHotkeyString(UINT code, UINT mods, wstring & str)
 {
-	WCHAR keyname[256];
+	WCHAR keyname[256] = {};
 	UINT scanCode;
 	int length = 0;
 
 	if (mods & MOD_SHIFT)
 	{
 		scanCode = MapVirtualKey(VK_SHIFT, MAPVK_VK_TO_VSC);
-		length = GetKeyNameText(scanCode << 16, keyname, 255);
+		length = GetKeyNameTextW(scanCode << 16, keyname, 255);
 	}
 	if (mods & MOD_CONTROL)
 	{
 		if (length > 0) { keyname[length++] = L'+'; keyname[length] = 0; }
 		scanCode = MapVirtualKey(VK_CONTROL, MAPVK_VK_TO_VSC);
-		length += GetKeyNameText(scanCode << 16, keyname + length, 255 - length);
+		length += GetKeyNameTextW(scanCode << 16, keyname + length, 255 - length);
 	}
 	if (mods & MOD_ALT)
 	{
 		if (length > 0) { keyname[length++] = L'+'; keyname[length] = 0; }
 		scanCode = MapVirtualKey(VK_MENU, MAPVK_VK_TO_VSC);
-		length += GetKeyNameText(scanCode << 16, keyname + length, 255 - length);
+		length += GetKeyNameTextW(scanCode << 16, keyname + length, 255 - length);
 	}
 	if (mods & MOD_WIN)
 	{
 		if (length > 0) { keyname[length++] = L'+'; keyname[length] = 0; }
 		scanCode = MapVirtualKey(VK_LWIN, MAPVK_VK_TO_VSC);
-		length += GetKeyNameText(scanCode << 16, keyname + length, 255 - length);
+		length += GetKeyNameTextW(scanCode << 16, keyname + length, 255 - length);
 	}
 	if (code != 0)
 	{
 		if (length > 0) { keyname[length++] = L'+'; keyname[length] = 0; }
 		scanCode = MapVirtualKey(code, MAPVK_VK_TO_VSC);
-		length += GetKeyNameText(scanCode << 16, keyname + length, 255 - length);
+		length += GetKeyNameTextW(scanCode << 16, keyname + length, 255 - length);
 	}
 	str += L" (";
 	str += keyname;
@@ -194,10 +197,9 @@ void HandleHotkeyError(wstring& s)
 	WCHAR ErrorStr[512] = {0};
 	s += L"\n\n";
 	DWORD err = GetLastError();
-	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, 0, err, MAKELANGID(LANG_NEUTRAL,SUBLANG_DEFAULT), ErrorStr, 511, 0);
+	FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM, 0, err, MAKELANGID(LANG_NEUTRAL,SUBLANG_DEFAULT), ErrorStr, 511, 0);
 	s += ErrorStr;
-	MessageBox(NULL, s.c_str(), L"Hotkey Error", MB_OK);
-
+	MessageBoxW(NULL, s.c_str(), L"Hotkey Error", MB_OK);
 }
 
 // Install all hotkeys. Do this on load or when the prefs change.
@@ -269,28 +271,19 @@ bool AlreadyRunning()
 	return bAlreadyRunning;
 }
 
-// Check OS version and set hotkey flag (MOD_NOREPEAT isn't supported on Vista)
+// Check OS version - requires Windows 7 or later.
 bool CheckOSVersion()
 {
-	if (!IsWindowsVistaOrGreater())
+	if (!IsWindows7OrGreater())
 	{
-		MessageBox(NULL, L"Requires Windows Vista or later.", L"Quick Sound Endpoint Switcher", MB_OK);
+		MessageBoxW(NULL, L"Requires Windows 7 or later.", L"Quick Sound Endpoint Switcher", MB_OK);
 		return false;
 	}
-
-	// MOD_NOREPEAT is available on Windows 7 and later.
-	if (IsWindows7OrGreater())
-	{
-		gHotkeyFlags = MOD_NOREPEAT;
-	}
-
 	return true;
 }
 
 void MakegVersionString(HINSTANCE hInstance)
 {
-	DWORD dwVerInfoSize;
-	DWORD dwHnd;
 	VS_FIXEDFILEINFO *pFixedInfo;	// pointer to fixed file info structure
 	UINT    uVersionLen;			// Current length of full version string
 	WCHAR AppPathName[MAX_PATH];
@@ -298,15 +291,15 @@ void MakegVersionString(HINSTANCE hInstance)
 
 	ZeroMemory(AppName, (MAX_LOADSTRING+1) * sizeof(WCHAR));
 
-	GetModuleFileName(hInstance, AppPathName, MAX_PATH);
-	dwVerInfoSize = GetFileVersionInfoSize(AppPathName, &dwHnd);
+	GetModuleFileNameW(hInstance, AppPathName, MAX_PATH);
+	DWORD dwVerInfoSize = GetFileVersionInfoSizeW(AppPathName, NULL);
 	void *pBuffer = new char [dwVerInfoSize];
 	if(pBuffer == 0)
 		return;
-	GetFileVersionInfo(AppPathName, dwHnd, dwVerInfoSize, pBuffer);
-	VerQueryValue(pBuffer,_T("\\"),(void**)&pFixedInfo,(UINT *)&uVersionLen);
+	GetFileVersionInfoW(AppPathName, 0, dwVerInfoSize, pBuffer);
+	VerQueryValueW(pBuffer, L"\\", (void**)&pFixedInfo, (UINT *)&uVersionLen);
 
-	LoadString(hInstance, IDS_APP_TITLE, AppName, MAX_LOADSTRING);
+	LoadStringW(hInstance, IDS_APP_TITLE, AppName, MAX_LOADSTRING);
 	gVersionString.str(L"");
 	gVersionString.clear();
 	gVersionString << AppName
@@ -317,17 +310,17 @@ void MakegVersionString(HINSTANCE hInstance)
 		gVersionString << L"." << LOWORD (pFixedInfo->dwProductVersionLS);
 }
 
-int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
-					   _In_opt_ HINSTANCE hPrevInstance,
-					   _In_ LPTSTR    lpCmdLine,
-					   _In_ int       nCmdShow)
+int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
+					  _In_opt_ HINSTANCE hPrevInstance,
+					  _In_ LPWSTR     lpCmdLine,
+					  _In_ int        nCmdShow)
 {
 	if (!CheckOSVersion())
 		return 0;
 
 	if (AlreadyRunning())
 	{
-		MessageBox(NULL, L"An instance of Quick Sound Endpoint Switcher is already running.", L"Quick Sound Endpoint Switcher", MB_OK);
+		MessageBoxW(NULL, L"An instance of Quick Sound Endpoint Switcher is already running.", L"Quick Sound Endpoint Switcher", MB_OK);
 		return false;
 	}
 
@@ -335,9 +328,9 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	HACCEL hAccelTable;
 
 	// Initialize global strings
-	LoadString(hInstance, IDS_APP_TITLE, gszTitle, MAX_LOADSTRING);
-	LoadString(hInstance, IDC_QSS, gszWindowClass, MAX_LOADSTRING);
-	LoadString(hInstance, IDS_APPTOOLTIP, gszApplicationToolTip, MAX_LOADSTRING);
+	LoadStringW(hInstance, IDS_APP_TITLE, gszTitle, MAX_LOADSTRING);
+	LoadStringW(hInstance, IDC_QSS, gszWindowClass, MAX_LOADSTRING);
+	LoadStringW(hInstance, IDS_APPTOOLTIP, gszApplicationToolTip, MAX_LOADSTRING);
 
 	ghInstance = hInstance;
 	MyRegisterClass(hInstance);
@@ -358,7 +351,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		return FALSE;
 	}
 
-	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_QSS));
+	hAccelTable = LoadAcceleratorsW(hInstance, MAKEINTRESOURCEW(IDC_QSS));
 
 	// Main message loop:
 	while (int ret = GetMessage(&msg, NULL, 0, 0))
@@ -375,23 +368,23 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
-	WNDCLASSEX wcex;
+	WNDCLASSEXW wcex;
 
-	wcex.cbSize = sizeof(WNDCLASSEX);
+	wcex.cbSize = sizeof(WNDCLASSEXW);
 
 	wcex.style			= CS_HREDRAW | CS_VREDRAW;
 	wcex.lpfnWndProc	= WndProc;
 	wcex.cbClsExtra		= 0;
 	wcex.cbWndExtra		= 0;
 	wcex.hInstance		= hInstance;
-	wcex.hIcon			= LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
+	wcex.hIcon			= LoadIconW(hInstance, MAKEINTRESOURCEW(IDI_ICON1));
 	wcex.hCursor		= LoadCursor(NULL, IDC_ARROW);
 	wcex.hbrBackground	= (HBRUSH)(COLOR_WINDOW+1);
-	wcex.lpszMenuName	= MAKEINTRESOURCE(IDC_QSS);
+	wcex.lpszMenuName	= MAKEINTRESOURCEW(IDC_QSS);
 	wcex.lpszClassName	= gszWindowClass;
-	wcex.hIconSm		= LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+	wcex.hIconSm		= LoadIconW(wcex.hInstance, MAKEINTRESOURCEW(IDI_SMALL));
 
-	return RegisterClassEx(&wcex);
+	return RegisterClassExW(&wcex);
 }
 
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
@@ -400,13 +393,13 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 	hInst = hInstance; // Store instance handle in our global variable
 
-	hWnd = CreateWindow(gszWindowClass, gszTitle, WS_OVERLAPPEDWINDOW,
+	hWnd = CreateWindowW(gszWindowClass, gszTitle, WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, NULL);
 
 	if (!hWnd)
 		return FALSE;
 
-	hMainIcon = LoadIcon(hInstance,(LPCTSTR)MAKEINTRESOURCE(IDI_SMALL)); 
+	hMainIcon = LoadIconW(hInstance, MAKEINTRESOURCEW(IDI_SMALL));
 
 	nidApp.cbSize = sizeof(NOTIFYICONDATA);
 	nidApp.hWnd = (HWND) hWnd;
@@ -416,7 +409,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	wcsncpy_s(nidApp.szTip, 64, gszApplicationToolTip, _TRUNCATE);
 	if (!GetDeviceIcon(&nidApp.hIcon))
 		nidApp.hIcon = hMainIcon;
-	Shell_NotifyIcon(NIM_ADD, &nidApp); 
+	Shell_NotifyIconW(NIM_ADD, &nidApp); 
 
 	return TRUE;
 }
@@ -437,7 +430,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (wParam == CYCLE_HOTKEY)
 			CycleDevices();
 		else
-			SetDefaultAudioPlaybackDevice((gPrefs.GetID(wParam, TempString)).c_str());
+			SetDefaultAudioPlaybackDevice((gPrefs.GetID((int)wParam, TempString)).c_str());
 		return TRUE;
 	case WM_CREATE:
 		pClient = new CMMNotificationClient(hWnd);
@@ -449,7 +442,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		DestroyIcon(nidApp.hIcon);
 		if (!GetDeviceIcon(&nidApp.hIcon))
 			nidApp.hIcon = hMainIcon;
-		Shell_NotifyIcon(NIM_MODIFY,  &nidApp);
+		Shell_NotifyIconW(NIM_MODIFY, &nidApp);
 		return TRUE;
 	case WM_USER_NOTIFICATION_ADDED:
 	case WM_USER_NOTIFICATION_REMOVED:
@@ -475,8 +468,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 			GetCursorPos(&lpClickPoint);
 			hPopMenu = CreatePopupMenu();
-			InsertMenu(hPopMenu,0xFFFFFFFF, MF_BYPOSITION|MF_STRING, ID_MENU_ABOUT, _T("About..."));
-			InsertMenu(hPopMenu, 0xFFFFFFFF, MF_SEPARATOR|MF_BYPOSITION, 0, NULL);
+			InsertMenuW(hPopMenu, 0xFFFFFFFF, MF_BYPOSITION|MF_STRING, ID_MENU_ABOUT, L"About...");
+			InsertMenuW(hPopMenu, 0xFFFFFFFF, MF_SEPARATOR|MF_BYPOSITION, 0, NULL);
 
 			count = gPrefs.GetCount();
 			for (UINT i = 0; i < count; i++)
@@ -487,17 +480,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				if (gPrefs.GetHotkeyEnabled(i))
 					MenuString = MakeHotkeyString(gPrefs.GetHotkeyCode(i), gPrefs.GetHotkeyMods(i), MenuString);
 				if (IsDefaultAudioPlaybackDevice(gPrefs.GetID(i, TempString)))
-					InsertMenu(hPopMenu,0xFFFFFFFF, MF_BYPOSITION|MF_STRING|MF_CHECKED, ID_MENU_DEVICES + i, MenuString.c_str());
+					InsertMenuW(hPopMenu, 0xFFFFFFFF, MF_BYPOSITION|MF_STRING|MF_CHECKED, ID_MENU_DEVICES + i, MenuString.c_str());
 				else
-					InsertMenu(hPopMenu,0xFFFFFFFF, MF_BYPOSITION|MF_STRING, ID_MENU_DEVICES + i, MenuString.c_str());
+					InsertMenuW(hPopMenu, 0xFFFFFFFF, MF_BYPOSITION|MF_STRING, ID_MENU_DEVICES + i, MenuString.c_str());
 			}
 
 			gPrefs.GetCycleKeyString(TempString);
 
-			InsertMenu(hPopMenu, 0xFFFFFFFF, MF_SEPARATOR|MF_BYPOSITION, 0, NULL);
-			InsertMenu(hPopMenu, 0xFFFFFFFF, MF_BYPOSITION|MF_STRING, ID_MENU_SETTINGS, _T("Settings..."));
-			InsertMenu(hPopMenu, 0xFFFFFFFF, MF_SEPARATOR|MF_BYPOSITION, 0, NULL);
-			InsertMenu(hPopMenu, 0xFFFFFFFF, MF_BYPOSITION|MF_STRING, ID_MENU_EXIT, _T("Quit"));
+			InsertMenuW(hPopMenu, 0xFFFFFFFF, MF_SEPARATOR|MF_BYPOSITION, 0, NULL);
+			InsertMenuW(hPopMenu, 0xFFFFFFFF, MF_BYPOSITION|MF_STRING, ID_MENU_SETTINGS, L"Settings...");
+			InsertMenuW(hPopMenu, 0xFFFFFFFF, MF_SEPARATOR|MF_BYPOSITION, 0, NULL);
+			InsertMenuW(hPopMenu, 0xFFFFFFFF, MF_BYPOSITION|MF_STRING, ID_MENU_EXIT, L"Quit");
 			//								
 			SetForegroundWindow(hWnd);
 			TrackPopupMenu(hPopMenu,TPM_LEFTALIGN|TPM_LEFTBUTTON|TPM_BOTTOMALIGN,lpClickPoint.x, lpClickPoint.y,0,hWnd,NULL);
@@ -511,10 +504,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		switch (wmId)
 		{
 		case ID_MENU_ABOUT:
-			DialogBox(hInst, MAKEINTRESOURCE(IDD_DIALOG_ABOUT), hWnd, About);
+			DialogBoxW(hInst, MAKEINTRESOURCEW(IDD_DIALOG_ABOUT), hWnd, About);
 			return TRUE;
 		case ID_MENU_EXIT:
-			Shell_NotifyIcon(NIM_DELETE,&nidApp);
+			Shell_NotifyIconW(NIM_DELETE, &nidApp);
 			SendMessage(hWnd, WM_CLOSE, 0, 0);
 			DestroyWindow(hWnd);
 			return TRUE;
@@ -540,7 +533,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 	default:
 		if(message == s_uTaskbarRestart)
-			Shell_NotifyIcon(NIM_ADD, &nidApp);
+			Shell_NotifyIconW(NIM_ADD, &nidApp);
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 	return FALSE;
@@ -552,7 +545,7 @@ void DoSettingsDialog(HINSTANCE hInst, HWND hWnd)
 	INT_PTR rc;
 
 	TempPrefs = gPrefs;
-	rc = DialogBoxParam(hInst, MAKEINTRESOURCE(IDD_DIALOG_SETTINGS), hWnd, SettingsDialogProc, (LPARAM ) & TempPrefs);
+	rc = DialogBoxParamW(hInst, MAKEINTRESOURCEW(IDD_DIALOG_SETTINGS), hWnd, SettingsDialogProc, (LPARAM) &TempPrefs);
 
 	if (rc == IDOK)
 	{
@@ -560,6 +553,7 @@ void DoSettingsDialog(HINSTANCE hInst, HWND hWnd)
 		gPrefs.Save();
 	}
 }
+
 // Message handler for about box.
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -569,7 +563,7 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_INITDIALOG:
 		gOpenWindow = hDlg;
 		MakegVersionString(ghInstance);
-		SetWindowText(GetDlgItem(hDlg, IDC_STATIC_APP), gVersionString.str().c_str());
+		SetWindowTextW(GetDlgItem(hDlg, IDC_STATIC_APP), gVersionString.str().c_str());
 		return (INT_PTR)TRUE;
 	case WM_COMMAND:
 		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
@@ -629,8 +623,54 @@ bool GetDeviceIcon(HICON* hIcon)
 	{
 		wstring wsIconId = wsIconPath.substr(pos + 1, string::npos);
 		wsIconPath.erase(pos, string::npos);
-		UINT nIconID = static_cast<UINT>(_wtoi(wsIconId.c_str()));
-		*hIcon = ExtractIcon(ghInstance, wsIconPath.c_str(), nIconID);
+		int nIconID = _wtoi(wsIconId.c_str());
+
+		// Extract the large icon and scale it down to the systray size for best quality.  
+		// Requesting the small icon directly gives a low-res 16x16 that looks poor on
+		// modern displays. Extracting large and scaling produces a much sharper result.
+		HICON hLargeIcon = NULL;
+		if (nIconID < 0)
+			ExtractIconExW(wsIconPath.c_str(), nIconID, &hLargeIcon, NULL, 1);
+		else
+			ExtractIconExW(wsIconPath.c_str(), nIconID, &hLargeIcon, NULL, 1);
+
+		if (hLargeIcon)
+		{
+			// Scale the large icon down to the system-defined small icon size.
+			int cx = GetSystemMetrics(SM_CXSMICON);
+			int cy = GetSystemMetrics(SM_CYSMICON);
+			HDC hdc = GetDC(NULL);
+			HDC hdcMem = CreateCompatibleDC(hdc);
+			HBITMAP hBmp = CreateCompatibleBitmap(hdc, cx, cy);
+			HBITMAP hOldBmp = (HBITMAP)SelectObject(hdcMem, hBmp);
+
+			BITMAPINFO bmi = {};
+			bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+			bmi.bmiHeader.biWidth = cx;
+			bmi.bmiHeader.biHeight = -cy;
+			bmi.bmiHeader.biPlanes = 1;
+			bmi.bmiHeader.biBitCount = 32;
+			bmi.bmiHeader.biCompression = BI_RGB;
+			HBITMAP hDIB = CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, NULL, NULL, 0);
+			HBITMAP hOldDIB = (HBITMAP)SelectObject(hdcMem, hDIB);
+
+			DrawIconEx(hdcMem, 0, 0, hLargeIcon, cx, cy, 0, NULL, DI_NORMAL);
+
+			ICONINFO ii = {};
+			ii.fIcon = TRUE;
+			ii.hbmColor = hDIB;
+			ii.hbmMask = CreateBitmap(cx, cy, 1, 1, NULL);
+			*hIcon = CreateIconIndirect(&ii);
+
+			DeleteObject(ii.hbmMask);
+			SelectObject(hdcMem, hOldDIB);
+			DeleteObject(hDIB);
+			SelectObject(hdcMem, hOldBmp);
+			DeleteObject(hBmp);
+			DeleteDC(hdcMem);
+			ReleaseDC(NULL, hdc);
+			DestroyIcon(hLargeIcon);
+		}
 	}
 
 	return (*hIcon != NULL && *hIcon != (HICON)1);
@@ -638,11 +678,11 @@ bool GetDeviceIcon(HICON* hIcon)
 
 bool SetDefaultAudioPlaybackDevice(LPCWSTR devID)
 {	
-	CComPtr<IPolicyConfigVista> pPolicyConfig;
+	CComPtr<IPolicyConfig> pPolicyConfig;
 	ERole reserved = eConsole;
 	HRESULT hr;
 
-	hr = pPolicyConfig.CoCreateInstance(__uuidof(CPolicyConfigVistaClient));
+	hr = pPolicyConfig.CoCreateInstance(__uuidof(CPolicyConfigClient));
 	if (SUCCEEDED(hr))
 	{
 		hr = pPolicyConfig->SetDefaultEndpoint(devID, reserved);

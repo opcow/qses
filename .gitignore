@@ -2,14 +2,12 @@
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
-/Quick Sound Endpoint Switcher/Debug
-/Quick Sound Endpoint Switcher/Release
-/Quick Sound Endpoint Switcher/x64/Debug
-/Debug
-/.vs
-/Release
-/Quick Sound Endpoint Switcher/Prefs2.7z
-/Quick Sound Endpoint Switcher/Prefs.7z
+Quick Sound Endpoint Switcher/Debug
+Quick Sound Endpoint Switcher/Release
+Quick Sound Endpoint Switcher/x64/Debug
+Debug
+Release
+.vs
 *.tlog
 *.obj
 /Quick Sound Endpoint Switcher/x64/Release/Quick Sound Endpoint Switcher.exe.recipe
@@ -18,9 +16,8 @@
 *.iobj
 *.pdb
 *.log
-/Quick Sound Endpoint Switcher/x64
-/x64
-/Quick Sound Endpoint Switcher/Quick So.*
-/QSESWinUI3
-
-/unused
+Quick Sound Endpoint Switcher/x64
+x64
+Quick Sound Endpoint Switcher/Quick So.E8256141
+QSESWinUI3
+unused
