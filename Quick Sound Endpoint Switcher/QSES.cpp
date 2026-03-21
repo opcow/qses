@@ -1,5 +1,6 @@
 #include <wchar.h>
 #include "windows.h"
+#include <VersionHelpers.h>
 //#include <shellapi.h>
 #include <string>
 #include <sstream>
@@ -64,11 +65,6 @@ bool SetDefaultAudioPlaybackDevice(LPCWSTR devID);
 bool GetDeviceIcon(HICON * hIcon);
 bool IsDefaultAudioPlaybackDevice(const wstring& s);
 wstring& GetDefaultAudioPlaybackDevice(wstring& s);
-
-//void OpenWebsite (WCHAR * cpURL)
-//{
-//      ShellExecute (NULL, L"open", cpURL, NULL, NULL, SW_SHOWNORMAL);
-//}
 
 void MakeStartupLinkPath(TCHAR * name, TCHAR * path)
 {
@@ -276,23 +272,17 @@ bool AlreadyRunning()
 // Check OS version and set hotkey flag (MOD_NOREPEAT isn't supported on Vista)
 bool CheckOSVersion()
 {
-	OSVERSIONINFOEX osvi;
-	SYSTEM_INFO si;
-	BOOL bOsVersionInfoEx;
-
-	ZeroMemory(&si, sizeof(SYSTEM_INFO));
-	ZeroMemory(&osvi, sizeof(OSVERSIONINFOEX));
-
-	osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-	bOsVersionInfoEx = GetVersionEx((OSVERSIONINFO*) &osvi);
-
-	if (osvi.dwMajorVersion < 6)
+	if (!IsWindowsVistaOrGreater())
 	{
-		MessageBox(NULL, L"Requires Windows Vista or later.", L"Quick Sound Source", MB_OK);
+		MessageBox(NULL, L"Requires Windows Vista or later.", L"Quick Sound Endpoint Switcher", MB_OK);
 		return false;
 	}
-	else if (osvi.dwMinorVersion >=1)
+
+	// MOD_NOREPEAT is available on Windows 7 and later.
+	if (IsWindows7OrGreater())
+	{
 		gHotkeyFlags = MOD_NOREPEAT;
+	}
 
 	return true;
 }
@@ -337,7 +327,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 
 	if (AlreadyRunning())
 	{
-		MessageBox(NULL, L"An instance of Quick Sound Source is already running.", L"Quick Sound Source", MB_OK);
+		MessageBox(NULL, L"An instance of Quick Sound Endpoint Switcher is already running.", L"Quick Sound Endpoint Switcher", MB_OK);
 		return false;
 	}
 
@@ -507,7 +497,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			InsertMenu(hPopMenu, 0xFFFFFFFF, MF_SEPARATOR|MF_BYPOSITION, 0, NULL);
 			InsertMenu(hPopMenu, 0xFFFFFFFF, MF_BYPOSITION|MF_STRING, ID_MENU_SETTINGS, _T("Settings..."));
 			InsertMenu(hPopMenu, 0xFFFFFFFF, MF_SEPARATOR|MF_BYPOSITION, 0, NULL);
-			InsertMenu(hPopMenu, 0xFFFFFFFF, MF_BYPOSITION|MF_STRING, ID_MENU_EXIT, _T("Exit"));
+			InsertMenu(hPopMenu, 0xFFFFFFFF, MF_BYPOSITION|MF_STRING, ID_MENU_EXIT, _T("Quit"));
 			//								
 			SetForegroundWindow(hWnd);
 			TrackPopupMenu(hPopMenu,TPM_LEFTALIGN|TPM_LEFTBUTTON|TPM_BOTTOMALIGN,lpClickPoint.x, lpClickPoint.y,0,hWnd,NULL);

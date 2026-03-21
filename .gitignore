@@ -18,5 +18,9 @@
 *.iobj
 *.pdb
 *.log
-/Quick Sound Endpoint Switcher/x64/Release/QSES.res
+/Quick Sound Endpoint Switcher/x64
+/x64
+/Quick Sound Endpoint Switcher/Quick So.*
 /QSESWinUI3
+
+/unused

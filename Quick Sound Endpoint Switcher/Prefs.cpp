@@ -68,7 +68,7 @@ CQSESPrefs& CQSESPrefs::operator=( const CQSESPrefs& source )
 
 void CQSESPrefs::Add(DevicePrefs *sdi/*, bool def*/)
 {
-	int index = FindByName(sdi->Name);
+	int index = FindByID(sdi->DeviceID);
 
 	if (index != -1)
 	{
@@ -93,7 +93,7 @@ void CQSESPrefs::Add(DevicePrefs *sdi/*, bool def*/)
 
 void CQSESPrefs::Update(DevicePrefs *sdi/*, bool def*/)
 {
-	int index = FindByName(sdi->Name);
+	int index = FindByID(sdi->DeviceID);
 
 	if (index != -1)
 	{
@@ -255,6 +255,7 @@ bool CQSESPrefs::Init(int max)
 		return false;
 
 	mMax = max;
+	mNext = 0;
 
 	for (int i = 0; i < mMax; i++)
 		Erase(i);
@@ -314,20 +315,6 @@ void CQSESPrefs::ResetPresent()
 		mDevices[i].IsPresent = false;
 }
 
-//bool CQSESPrefs::Insert(int index, DevicePrefs * sdi)
-//{
-//	if (mNext == mMax || index > mNext)
-//		return false;
-//
-//	for (int i = mNext; i >= index; i--)
-//		mDevices[i] = mDevices[i-1];
-//	mDevices[index] = *sdi;
-//
-//	mNext++;
-//
-//	return true;
-//}
-
 int CQSESPrefs::FindByName(wstring& name)
 {
 	if (mNext != 0)
@@ -349,7 +336,7 @@ bool CQSESPrefs::Save()
 	SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, 0, &wstrPrefsPath);
 
 	FilePath = wstrPrefsPath;
-	FilePath += L"\\Quick Sound Source";
+	FilePath += L"\\Quick Sound Endpoint Switcher";
 	CreateDirectoryW(FilePath.c_str(), 0);
 	FilePath += L"\\Preferences.ini";
 
@@ -434,14 +421,15 @@ bool CQSESPrefs::Load()
 	SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, 0, &wstrPrefsPath);
 
 	wstring FilePath(wstrPrefsPath);
-	FilePath += L"\\Quick Sound Source";
+	FilePath += L"\\Quick Sound Endpoint Switcher";
 	CreateDirectoryW(FilePath.c_str(), 0);
 	FilePath += L"\\Preferences.ini";
 
 	map <wstring, map <wstring, wstring> > sections;
 
+	// Fix: was missing 'return', silently ignoring load failures
 	if (!ReadConfig(FilePath, sections))
-		false;
+		return false;
 
 	if (sections.count(L"[globals]") != 0)
 	{
@@ -469,11 +457,15 @@ bool CQSESPrefs::Load()
 		//if (count(kv.first.begin(), kv.first.end(), L'{') != 2 || count(kv.first.begin(), kv.first.end(), L'}') != 2)
 		if (!regex_match(kv.first.cbegin(), kv.first.cend(), wMatch, guid_regex))
 			continue;
-		mDevices[i].DeviceID = kv.first.substr(1, kv.first.length() - 1);
+		// Fix: was substr(1, length-1), which left the trailing ']' in the DeviceID,
+		// causing Save() to write double-bracketed section headers on the next save.
+		mDevices[i].DeviceID = kv.first.substr(1, kv.first.length() - 2);
 		if (kv.second.count(L"name") != 0)
 			mDevices[i].Name = kv.second.at(L"name");
+		// Fix: was comparing c_str() pointer to L"1" (always false), so MOD_ALT was
+		// never set and KeyMods was incorrectly reset to 0 for every device.
 		if (kv.second.count(L"altkey") != 0)
-			kv.second.at(L"altkey").c_str() == L"1" ? mDevices[i].KeyMods = MOD_ALT : mDevices[i].KeyMods = 0;
+			mDevices[i].KeyMods = (kv.second.at(L"altkey") == L"1") ? MOD_ALT : 0;
 		if (kv.second.count(L"controlkey") != 0 && kv.second.at(L"controlkey") == L"1")
 			mDevices[i].KeyMods |= MOD_CONTROL;
 		if (kv.second.count(L"shiftkey") != 0 && kv.second.at(L"shiftkey") == L"1")

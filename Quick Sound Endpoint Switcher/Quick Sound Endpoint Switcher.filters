@@ -18,13 +18,13 @@
     <ClCompile Include="Prefs.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="QSS.cpp">
+    <ClCompile Include="QSES.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Settings.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="QSSIMMNotificationClient.cpp">
+    <ClCompile Include="QSESIMMNotificationClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -38,7 +38,7 @@
     <ClInclude Include="Settings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="QSSIMMNotificationClient.h">
+    <ClInclude Include="QSESIMMNotificationClient.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -51,7 +51,7 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="QSS.rc">
+    <ResourceCompile Include="QSES.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>

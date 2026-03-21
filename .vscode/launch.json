@@ -12,7 +12,7 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "preLaunchTask": "Build QSES Debug",
+            "preLaunchTask": "Build Debug",
             "environment": [],
             "console": "externalTerminal"
         }

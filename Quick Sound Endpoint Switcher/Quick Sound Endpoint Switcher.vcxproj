@@ -208,6 +208,7 @@
     <ClCompile Include="Settings.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="PolicyConfig.h" />
     <ClInclude Include="Prefs.h" />
     <ClInclude Include="QSESIMMNotificationClient.h" />
     <ClInclude Include="resource.h" />
